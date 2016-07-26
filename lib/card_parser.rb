@@ -4,9 +4,7 @@ class CardParser
 
   class CardParsingError < StandardError; end
 
-  TOP_X = 12
-  TOP_Y = 12
-  BOTTOM_Y = 21
+  MARGIN_OF_ERROR = 5
 
   def initialize(file_loc:)
     self.file_loc = file_loc
@@ -37,9 +35,13 @@ class CardParser
   end
 
   def find_card_title
+    full_card = @response.text_annotations.shift
+    top_left = full_card.bounding_poly.vertices.first
     @title = @response.text_annotations.select do |annotation|
-      tl, _tr, bl, _br = annotation.bounding_poly.vertices
-      tl.y == TOP_Y && bl.y == BOTTOM_Y
+      tl, _tr, _bl, _br = annotation.bounding_poly.vertices
+      (tl.y - top_left.y).abs < MARGIN_OF_ERROR
     end.map(&:description).join(" ")
+
+    raise CardParsingError, "No title found" if @title.length == 0
   end
 end
